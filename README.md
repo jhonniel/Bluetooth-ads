@@ -13,6 +13,10 @@ impressions and clicks back for analytics.
                                        └───────────────────  Mobile API: campaigns by beacon, event reporting  ◄────────┘
 ```
 
+![Promotion notification on iOS and Android](apps/mobile-samples/mockup/beacon-ads-phone-notifications.png)
+
+*Illustrative mockup of a campaign notification on iOS and Android. See [apps/mobile-samples](apps/mobile-samples/README.md) for the sample apps.*
+
 What is real and what is not:
 
 - The dashboard manages configuration only. It never touches Bluetooth hardware.
