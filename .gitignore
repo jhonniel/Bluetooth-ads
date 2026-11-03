@@ -1,0 +1,24 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+coverage/
+
+# Next.js
+apps/web/.next/
+apps/web/out/
+apps/web/next-env.d.ts
+apps/web/storage/
+
+# Windows agent
+apps/windows-agent/dist/
+apps/windows-agent/native/**/bin/
+apps/windows-agent/native/**/obj/
+apps/windows-agent/native/**/publish/
+/apps/mobile-samples/android/.gradle/
+/apps/mobile-samples/android/build/
+/apps/mobile-samples/android/app/build/
+/apps/mobile-samples/android/local.properties
+/apps/mobile-samples/ios/*.xcodeproj/

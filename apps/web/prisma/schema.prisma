@@ -1,0 +1,367 @@
+// Bluetooth Proximity Advertising Platform
+//
+// Internal integer primary keys are used for relationships only. Everything exposed through
+// URLs, APIs or the Windows agent uses `uuid` (or `stationCode` for stations).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  VIEWER
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  EXPIRED
+  ARCHIVED
+}
+
+enum StationStatus {
+  ONLINE
+  OFFLINE
+  CONNECTING
+  ERROR
+}
+
+enum BluetoothStatus {
+  UNKNOWN
+  ADVERTISING
+  WAITING
+  STOPPED
+  NO_ADAPTER
+  UNSUPPORTED
+  RADIO_OFF
+  ERROR
+}
+
+enum AdvertisementFormat {
+  MANUFACTURER_DATA
+  IBEACON
+}
+
+enum AdvertisingEventType {
+  beacon_detected
+  notification_displayed
+  notification_clicked
+}
+
+enum StationCommandType {
+  START_ADVERTISING
+  STOP_ADVERTISING
+  SYNC_CAMPAIGNS
+}
+
+enum StationCommandStatus {
+  PENDING
+  DELIVERED
+  SUCCEEDED
+  FAILED
+  EXPIRED
+}
+
+enum StationLogType {
+  REGISTERED
+  CONNECTED
+  DISCONNECTED
+  STATUS_CHANGED
+  ADVERTISING_STARTED
+  ADVERTISING_STOPPED
+  ADVERTISING_ERROR
+  COMMAND_QUEUED
+  COMMAND_COMPLETED
+  CREDENTIAL_ISSUED
+  CREDENTIAL_REVOKED
+  CONFIG_UPDATED
+}
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  uuid         String     @unique @default(uuid()) @db.Uuid
+  name         String     @db.VarChar(120)
+  email        String     @unique @db.VarChar(255)
+  passwordHash String     @map("password_hash")
+  role         UserRole   @default(VIEWER)
+  isActive     Boolean    @default(true) @map("is_active")
+  lastLoginAt  DateTime?  @map("last_login_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  auditLogs        AuditLog[]
+  campaigns        Campaign[]
+  stationCommands  StationCommand[]
+
+  @@map("users")
+}
+
+model Advertisement {
+  id          Int       @id @default(autoincrement())
+  uuid        String    @unique @default(uuid()) @db.Uuid
+  name        String    @db.VarChar(120)
+  title       String    @db.VarChar(65)
+  message     String    @db.VarChar(240)
+  description String?   @db.Text
+  imageUrl    String?   @map("image_url") @db.VarChar(2048)
+  landingUrl  String?   @map("landing_url") @db.VarChar(2048)
+  ctaLabel    String?   @map("cta_label") @db.VarChar(30)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  campaigns Campaign[]
+
+  @@index([deletedAt])
+  @@map("advertisements")
+}
+
+model Campaign {
+  id                     Int            @id @default(autoincrement())
+  uuid                   String         @unique @default(uuid()) @db.Uuid
+  /// Compact 16-bit identifier broadcast over BLE (1..65535).
+  beaconKey              Int            @unique @default(autoincrement()) @map("beacon_key")
+  name                   String         @db.VarChar(120)
+  description            String?        @db.Text
+  status                 CampaignStatus @default(DRAFT)
+  advertisementId        Int?           @map("advertisement_id")
+  startAt                DateTime?      @map("start_at")
+  endAt                  DateTime?      @map("end_at")
+  /// 1 (lowest) .. 100 (highest).
+  priority               Int            @default(50)
+  /// Null inherits the global notification setting.
+  cooldownMinutes        Int?           @map("cooldown_minutes")
+  /// Null inherits the global notification setting.
+  maxNotificationsPerDay Int?           @map("max_notifications_per_day")
+  createdById            Int?           @map("created_by_id")
+  createdAt              DateTime       @default(now()) @map("created_at")
+  updatedAt              DateTime       @updatedAt @map("updated_at")
+  deletedAt              DateTime?      @map("deleted_at")
+
+  advertisement   Advertisement?     @relation(fields: [advertisementId], references: [id], onDelete: Restrict)
+  createdBy       User?              @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  stations        CampaignStation[]
+  events          AdvertisingEvent[]
+  targetedBy      BluetoothStation[] @relation("StationTargetCampaign")
+  advertisedBy    BluetoothStation[] @relation("StationCurrentCampaign")
+
+  @@index([status, startAt, endAt])
+  @@index([advertisementId])
+  @@index([deletedAt])
+  @@map("campaigns")
+}
+
+model BluetoothStation {
+  id                    Int                 @id @default(autoincrement())
+  name                  String              @db.VarChar(120)
+  /// Public identifier used in URLs and by the agent.
+  stationCode           String              @unique @map("station_code") @db.VarChar(32)
+  location              String?             @db.VarChar(255)
+  /// Station beacon UUID broadcast over BLE and used by the mobile API lookup. Unique case-insensitively
+  /// (including soft-deleted stations) so a retired beacon never resolves to another station.
+  beaconIdentifier      String              @unique @map("beacon_identifier") @db.VarChar(36)
+  status                StationStatus       @default(OFFLINE)
+  bluetoothStatus       BluetoothStatus     @default(UNKNOWN) @map("bluetooth_status")
+  bluetoothError        String?             @map("bluetooth_error") @db.VarChar(500)
+  lastHeartbeat         DateTime?           @map("last_heartbeat")
+  lastConnectedAt       DateTime?           @map("last_connected_at")
+  softwareVersion       String?             @map("software_version") @db.VarChar(32)
+  hostname              String?             @db.VarChar(255)
+  osVersion             String?             @map("os_version") @db.VarChar(255)
+  capabilities          Json?
+  advertisingStartedAt  DateTime?           @map("advertising_started_at")
+
+  // Bluetooth configuration (desired state, delivered to the agent).
+  advertisingEnabled    Boolean             @default(true) @map("advertising_enabled")
+  advertisementFormat   AdvertisementFormat @default(MANUFACTURER_DATA) @map("advertisement_format")
+  /// Bluetooth SIG company identifier. Null inherits the system default.
+  manufacturerId        Int?                @map("manufacturer_id")
+  iBeaconMajor          Int                 @default(1) @map("ibeacon_major")
+  measuredPower         Int                 @default(-59) @map("measured_power")
+  txPowerDbm            Int?                @map("tx_power_dbm")
+  advertisingIntervalMs Int?                @map("advertising_interval_ms")
+  /// Null inherits the global minimum RSSI.
+  minRssi               Int?                @map("min_rssi")
+  targetCampaignId      Int?                @map("target_campaign_id")
+  /// Campaign the agent last reported as actually being advertised.
+  currentCampaignId     Int?                @map("current_campaign_id")
+  configRevision        Int                 @default(1) @map("config_revision")
+
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+  deletedAt             DateTime?           @map("deleted_at")
+
+  targetCampaign  Campaign?           @relation("StationTargetCampaign", fields: [targetCampaignId], references: [id], onDelete: SetNull)
+  currentCampaign Campaign?           @relation("StationCurrentCampaign", fields: [currentCampaignId], references: [id], onDelete: SetNull)
+  campaigns       CampaignStation[]
+  events          AdvertisingEvent[]
+  commands        StationCommand[]
+  credentials     StationCredential[]
+  logs            StationLog[]
+
+  @@index([deletedAt])
+  @@index([lastHeartbeat])
+  @@map("bluetooth_stations")
+}
+
+model CampaignStation {
+  id         Int      @id @default(autoincrement())
+  campaignId Int      @map("campaign_id")
+  stationId  Int      @map("station_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  campaign Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  station  BluetoothStation @relation(fields: [stationId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, stationId])
+  @@index([stationId])
+  @@map("campaign_stations")
+}
+
+model AdvertisingEvent {
+  id                   Int                  @id @default(autoincrement())
+  campaignId           Int                  @map("campaign_id")
+  stationId            Int?                 @map("station_id")
+  eventType            AdvertisingEventType @map("event_type")
+  /// HMAC-SHA256 of the app-generated anonymous token. The raw token is never stored.
+  anonymousDeviceToken String               @map("anonymous_device_token") @db.VarChar(64)
+  rssi                 Int?
+  platform             String?              @db.VarChar(16)
+  appVersion           String?              @map("app_version") @db.VarChar(32)
+  /// When the event happened on the device (clamped server-side).
+  occurredAt           DateTime             @default(now()) @map("occurred_at")
+  createdAt            DateTime             @default(now()) @map("created_at")
+
+  campaign Campaign          @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  station  BluetoothStation? @relation(fields: [stationId], references: [id], onDelete: SetNull)
+
+  @@index([occurredAt])
+  @@index([campaignId, occurredAt])
+  @@index([stationId, occurredAt])
+  @@index([eventType, occurredAt])
+  @@index([anonymousDeviceToken, campaignId, eventType, occurredAt])
+  @@map("advertising_events")
+}
+
+model StationCommand {
+  id          Int                  @id @default(autoincrement())
+  uuid        String               @unique @default(uuid()) @db.Uuid
+  stationId   Int                  @map("station_id")
+  commandType StationCommandType   @map("command_type")
+  payload     Json?
+  status      StationCommandStatus @default(PENDING)
+  result      String?              @db.VarChar(1000)
+  createdById Int?                 @map("created_by_id")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  deliveredAt DateTime?            @map("delivered_at")
+  executedAt  DateTime?            @map("executed_at")
+  expiresAt   DateTime             @map("expires_at")
+
+  station   BluetoothStation @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  createdBy User?            @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([stationId, status, createdAt])
+  @@map("station_commands")
+}
+
+model StationCredential {
+  id          Int       @id @default(autoincrement())
+  uuid        String    @unique @default(uuid()) @db.Uuid
+  stationId   Int       @map("station_id")
+  /// SHA-256 of the high-entropy token. The token itself is shown once and never stored.
+  tokenHash   String    @unique @map("token_hash") @db.VarChar(64)
+  /// First characters of the token so administrators can tell credentials apart.
+  tokenPrefix String    @map("token_prefix") @db.VarChar(16)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  expiresAt   DateTime? @map("expires_at")
+  revokedAt   DateTime? @map("revoked_at")
+  lastUsedAt  DateTime? @map("last_used_at")
+
+  station BluetoothStation @relation(fields: [stationId], references: [id], onDelete: Cascade)
+
+  @@index([stationId])
+  @@map("station_credentials")
+}
+
+model StationLog {
+  id        Int            @id @default(autoincrement())
+  stationId Int            @map("station_id")
+  type      StationLogType
+  level     LogLevel       @default(INFO)
+  message   String         @db.VarChar(500)
+  metadata  Json?
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  station BluetoothStation @relation(fields: [stationId], references: [id], onDelete: Cascade)
+
+  @@index([stationId, createdAt])
+  @@index([type, createdAt])
+  @@map("station_logs")
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int?     @map("user_id")
+  action     String   @db.VarChar(64)
+  entityType String   @map("entity_type") @db.VarChar(64)
+  /// Public identifier (uuid or station code) of the affected entity.
+  entityId   String?  @map("entity_id") @db.VarChar(64)
+  summary    String   @db.VarChar(500)
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+/// Singleton row (id = 1).
+model NotificationSettings {
+  id                          Int      @id @default(1)
+  defaultCooldownMinutes      Int      @default(60) @map("default_cooldown_minutes")
+  maxNotificationsPerDay      Int      @default(3) @map("max_notifications_per_day")
+  quietHoursEnabled           Boolean  @default(false) @map("quiet_hours_enabled")
+  /// HH:mm in the system timezone.
+  quietHoursStart             String   @default("22:00") @map("quiet_hours_start") @db.VarChar(5)
+  quietHoursEnd               String   @default("08:00") @map("quiet_hours_end") @db.VarChar(5)
+  duplicatePreventionEnabled  Boolean  @default(true) @map("duplicate_prevention_enabled")
+  duplicateWindowSeconds      Int      @default(60) @map("duplicate_window_seconds")
+  minRssi                     Int      @default(-75) @map("min_rssi")
+  notificationExpirationMinutes Int    @default(30) @map("notification_expiration_minutes")
+  updatedAt                   DateTime @updatedAt @map("updated_at")
+
+  @@map("notification_settings")
+}
+
+/// Singleton row (id = 1).
+model SystemSettings {
+  id                         Int                 @id @default(1)
+  organizationName           String              @default("My Organization") @map("organization_name") @db.VarChar(120)
+  timezone                   String              @default("UTC") @db.VarChar(64)
+  /// Bluetooth SIG company identifier for manufacturer data. Null until configured.
+  defaultManufacturerId      Int?                @map("default_manufacturer_id")
+  defaultAdvertisementFormat AdvertisementFormat @default(MANUFACTURER_DATA) @map("default_advertisement_format")
+  heartbeatIntervalSeconds   Int                 @default(30) @map("heartbeat_interval_seconds")
+  commandPollIntervalSeconds Int                 @default(15) @map("command_poll_interval_seconds")
+  campaignSyncIntervalSeconds Int                @default(60) @map("campaign_sync_interval_seconds")
+  offlineThresholdSeconds    Int                 @default(120) @map("offline_threshold_seconds")
+  updatedAt                  DateTime            @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}

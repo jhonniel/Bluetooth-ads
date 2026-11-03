@@ -1,0 +1,6 @@
+{
+  "serverUrl": "https://ads.example.com",
+  "stationCode": "STN-XXXXXX",
+  "logLevel": "info",
+  "requestTimeoutMs": 15000
+}

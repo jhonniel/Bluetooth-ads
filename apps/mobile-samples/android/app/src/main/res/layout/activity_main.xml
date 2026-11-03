@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Beacon Ads sample"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="Detects Beacon Ads stations over Bluetooth LE and shows the active promotion as a notification." />
+
+        <EditText
+            android:id="@+id/serverUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Server URL, e.g. http://192.168.1.20:3000"
+            android:inputType="textUri" />
+
+        <EditText
+            android:id="@+id/apiKey"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Mobile API key (MOBILE_API_KEY)"
+            android:inputType="textPassword" />
+
+        <EditText
+            android:id="@+id/companyId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Company ID (hex), FFFF in development"
+            android:inputType="textCapCharacters" />
+
+        <Button
+            android:id="@+id/save"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save settings" />
+
+        <Button
+            android:id="@+id/permissions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="1. Grant Bluetooth, location and notification permissions" />
+
+        <Button
+            android:id="@+id/backgroundPermission"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="2. Allow scanning in the background" />
+
+        <Button
+            android:id="@+id/startScan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Start background scanning" />
+
+        <Button
+            android:id="@+id/stopScan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Stop scanning" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Test without a station"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/testBeacon"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Station beacon UUID (from the station page)"
+            android:inputType="text" />
+
+        <Button
+            android:id="@+id/test"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Fetch campaign and notify" />
+
+        <TextView
+            android:id="@+id/log"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="monospace"
+            android:textSize="12sp" />
+    </LinearLayout>
+</ScrollView>

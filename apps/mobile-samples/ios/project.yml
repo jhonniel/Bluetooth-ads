@@ -1,0 +1,21 @@
+# XcodeGen spec: `brew install xcodegen && xcodegen generate` creates BeaconAdsSample.xcodeproj.
+name: BeaconAdsSample
+options:
+  bundleIdPrefix: com.beaconads
+  deploymentTarget:
+    iOS: "16.0"
+targets:
+  BeaconAdsSample:
+    type: application
+    platform: iOS
+    sources:
+      - BeaconAdsSample
+    info:
+      path: BeaconAdsSample/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.beaconads.sample
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_STYLE: Automatic

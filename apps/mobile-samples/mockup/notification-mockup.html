@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Beacon Ads notification mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1024px; height: 640px; overflow: hidden; }
+  body {
+    font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
+    background: radial-gradient(circle at 50% 60%, #eef2f8 0%, #dfe5ee 60%, #d6dde8 100%);
+    display: flex; flex-direction: column; align-items: center; padding-top: 22px;
+  }
+  .caption { text-align: center; }
+  .caption h1 { font-size: 22px; color: #111827; font-weight: 700; }
+  .caption p { font-size: 13px; color: #4b5563; margin-top: 4px; }
+  .stage { position: relative; display: flex; align-items: center; justify-content: center; gap: 56px; margin-top: 18px; }
+  .waves { position: absolute; left: 50%; top: 46%; width: 0; height: 0; }
+  .waves span {
+    position: absolute; left: 50%; top: 50%; border: 2px solid rgba(37, 99, 235, 0.16); border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .station { position: relative; z-index: 1; width: 180px; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: -40px; }
+  .station .box {
+    width: 60px; height: 60px; border-radius: 16px; background: #111827; color: #fff;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(17,24,39,.25);
+  }
+  .station .label { font-size: 12px; color: #374151; font-weight: 600; background: rgba(255,255,255,.85); padding: 4px 10px; border-radius: 999px; text-align: center; }
+  .station .hint { font-size: 11px; color: #6b7280; text-align: center; line-height: 1.35; }
+  .device { display: flex; flex-direction: column; align-items: center; gap: 12px; position: relative; z-index: 2; }
+  .phone {
+    width: 262px; height: 520px; border-radius: 44px; background: #0b0b0f; padding: 10px;
+    box-shadow: 0 26px 50px rgba(15, 23, 42, 0.32), inset 0 0 0 2px #2a2a30;
+  }
+  .screen { width: 100%; height: 100%; border-radius: 35px; overflow: hidden; position: relative; }
+  .platform { font-size: 13px; font-weight: 600; color: #374151; }
+
+  /* iOS */
+  .ios .screen { background: linear-gradient(160deg, #3b4f7d 0%, #6b5b95 45%, #c07c8f 100%); color: #fff; }
+  .ios .island { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 96px; height: 28px; background: #000; border-radius: 20px; }
+  .ios .status { display: flex; justify-content: space-between; padding: 16px 28px 0; font-size: 13px; font-weight: 600; }
+  .ios .date { text-align: center; margin-top: 34px; font-size: 15px; font-weight: 500; opacity: .9; }
+  .ios .time { text-align: center; font-size: 68px; font-weight: 600; letter-spacing: -2px; line-height: 1; margin-top: 2px; }
+  .ios .notif {
+    margin: 120px 10px 0; padding: 11px 12px; border-radius: 20px;
+    background: rgba(245, 245, 247, 0.78); backdrop-filter: blur(20px); color: #111;
+    display: flex; gap: 10px;
+  }
+  .ios .icon { width: 38px; height: 38px; border-radius: 9px; background: #111827; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .ios .head { display: flex; justify-content: space-between; font-size: 12px; color: #6b7280; }
+  .ios .title { font-size: 14px; font-weight: 600; margin-top: 1px; }
+  .ios .body { font-size: 13.5px; line-height: 1.3; margin-top: 2px; }
+  .ios .home { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 120px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.85); }
+
+  /* Android */
+  .android .screen { background: #1f2430; color: #e6e9ef; }
+  .android .status { display: flex; justify-content: space-between; padding: 14px 24px 0; font-size: 13px; }
+  .android .clock { padding: 14px 22px 0; font-size: 40px; font-weight: 400; }
+  .android .sub { padding: 2px 24px 0; font-size: 14px; color: #aab2c5; }
+  .android .tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 16px 16px 0; }
+  .android .tile { height: 52px; border-radius: 26px; background: #2c3342; display: flex; align-items: center; gap: 8px; padding: 0 14px; font-size: 12.5px; }
+  .android .tile.on { background: #a8c7fa; color: #062e6f; }
+  .android .notif { margin: 18px 12px 0; padding: 14px 16px; border-radius: 24px; background: #2c3342; }
+  .android .app { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #aab2c5; }
+  .android .badge { width: 22px; height: 22px; border-radius: 50%; background: #a8c7fa; display: flex; align-items: center; justify-content: center; }
+  .android .title { font-size: 15px; font-weight: 600; margin-top: 10px; color: #f1f3f8; }
+  .android .body { font-size: 13.5px; line-height: 1.35; margin-top: 3px; color: #c9cfdc; }
+  .android .actions { margin-top: 12px; display: flex; gap: 8px; }
+  .android .action { font-size: 13px; font-weight: 600; color: #062e6f; background: #a8c7fa; padding: 7px 16px; border-radius: 999px; }
+  .android .handle { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 110px; height: 4px; border-radius: 2px; background: #8b93a7; }
+</style>
+</head>
+<body>
+  <div class="caption">
+    <h1>Nearby promotion delivered by Bluetooth beacon</h1>
+    <p>Station broadcasts a compact beacon ID → app fetches the live campaign → local notification</p>
+  </div>
+
+  <div class="stage">
+  <div class="waves">
+    <span style="width:150px;height:150px"></span>
+    <span style="width:260px;height:260px"></span>
+    <span style="width:380px;height:380px"></span>
+    <span style="width:500px;height:500px"></span>
+  </div>
+
+  <!-- iPhone -->
+  <div class="device">
+  <div class="phone ios">
+    <div class="screen">
+      <div class="island"></div>
+      <div class="status"><span>2:15</span><span>●●● 5G ▮</span></div>
+      <div class="date">Tuesday, November 3</div>
+      <div class="time">2:15</div>
+      <div class="notif">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></svg>
+        </div>
+        <div>
+          <div class="head"><span>BEACON ADS</span><span>now</span></div>
+          <div class="title">Happy Hour at the Coffee Bar</div>
+          <div class="body">Buy one, get one free on all iced drinks from 2-5 PM.</div>
+        </div>
+      </div>
+      <div class="home"></div>
+    </div>
+  </div>
+  <div class="platform">iOS · iBeacon region monitoring</div>
+  </div>
+
+  <div class="station">
+    <div class="box">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></svg>
+    </div>
+    <div class="label">Makati Flagship<br />Main Entrance</div>
+    <div class="hint">Windows station<br />campaign key 2 · −59 dBm</div>
+  </div>
+
+  <!-- Android -->
+  <div class="device">
+  <div class="phone android">
+    <div class="screen">
+      <div class="status"><span>2:15</span><span>▲ 5G ▮ 82%</span></div>
+      <div class="clock">2:15</div>
+      <div class="sub">Tue, Nov 3</div>
+      <div class="tiles">
+        <div class="tile on">ᛒ Bluetooth</div>
+        <div class="tile">◉ Location</div>
+      </div>
+      <div class="notif">
+        <div class="app">
+          <div class="badge">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#062e6f" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></svg>
+          </div>
+          <span>Beacon Ads Sample · Nearby promotions · now</span>
+        </div>
+        <div class="title">Happy Hour at the Coffee Bar</div>
+        <div class="body">Buy one, get one free on all iced drinks from 2-5 PM.</div>
+        <div class="actions"><span class="action">See Menu</span></div>
+      </div>
+      <div class="handle"></div>
+    </div>
+  </div>
+  <div class="platform">Android · BLE background scan</div>
+  </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "name": "bluetooth-proximity-ads",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bluetooth Proximity Advertising Platform: admin dashboard, station/mobile APIs and Windows BLE advertising agent.",
+  "workspaces": [
+    "packages/*",
+    "apps/web",
+    "apps/windows-agent"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w web",
+    "build": "npm run build -w web",
+    "start": "npm run start -w web",
+    "lint": "npm run lint -w web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:migrate": "npm run db:migrate -w web",
+    "db:deploy": "npm run db:deploy -w web",
+    "db:seed": "npm run db:seed -w web",
+    "agent:build": "npm run build -w windows-agent"
+  },
+  "overrides": {
+    "react-is": "19.1.0"
+  },
+  "engines": {
+    "node": ">=20.11"
+  },
+  "allowScripts": {
+    "prisma@6.19.3": true,
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.2": true
+  }
+}
